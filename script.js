@@ -1,6 +1,8 @@
 let data = [];
 let filtered = [];
+let displayData = []; // チェックボックスで絞り込まれた表示対象
 let currentPage = 1;
+let sortAsc = true; // 昇順かどうか
 const resultsPerPage = 10;
 
 fetch('data.json')
@@ -22,13 +24,30 @@ function searchJinja() {
     item['町域・字名']?.toLowerCase().includes(query) ||
     item['市町村名(支部)']?.toLowerCase().includes(query)
   );
-  
+
+  sortResults();
+
   if (filtered.length === 0) {
     displayMessage('😢 該当する神社が見つかりませんでした');
     return;
   }
 
+  applyFilter(); // チェックボックスで絞り込みしてから表示
+
   renderResults();
+}
+
+function sortResults() {
+  filtered.sort((a, b) => {
+    const cityA = a['市町村名(支部)'] || '';
+    const cityB = b['市町村名(支部)'] || '';
+    const townA = a['町域・字名'] || '';
+    const townB = b['町域・字名'] || '';
+
+    if (cityA < cityB) return sortAsc ? -1 : 1;
+    if (cityA > cityB) return sortAsc ? 1 : -1;
+    return sortAsc ? townA.localeCompare(townB) : townB.localeCompare(townA);
+  });
 }
 
 function renderResults() {
@@ -37,10 +56,10 @@ function renderResults() {
 
   const startIndex = (currentPage - 1) * resultsPerPage;
   const endIndex = startIndex + resultsPerPage;
-  const pageItems = filtered.slice(startIndex, endIndex);
+  const pageItems = displayData.slice(startIndex, endIndex); // ← 修正ポイント
 
   const info = document.createElement('div');
-  info.innerHTML = `✅ 全 ${filtered.length} 件ヒット（ページ ${currentPage} / ${Math.ceil(filtered.length / resultsPerPage)}）`;
+  info.innerHTML = `✅ 全 ${displayData.length} 件ヒット（ページ ${currentPage} / ${Math.ceil(displayData.length / resultsPerPage)}）`;
   resultsDiv.appendChild(info);
 
   pageItems.forEach(item => {
@@ -60,9 +79,10 @@ function renderResults() {
   renderPagination();
 }
 
+
 function renderPagination() {
   const resultsDiv = document.getElementById('results');
-  const totalPages = Math.ceil(filtered.length / resultsPerPage);
+  const totalPages = Math.ceil(displayData.length / resultsPerPage); // ← 修正
 
   if (totalPages <= 1) return;
 
@@ -93,10 +113,31 @@ function renderPagination() {
   resultsDiv.appendChild(nav);
 }
 
+
 function displayMessage(message) {
   const resultsDiv = document.getElementById('results');
   resultsDiv.innerHTML = `<p>${message}</p>`;
 }
+
+function applyFilter() {
+  const checkCity = document.getElementById('filterCity').checked;
+  const checkTown = document.getElementById('filterTown').checked;
+
+  displayData = filtered.filter(item => {
+    const town = item['町域・字名']?.toLowerCase() || '';
+    const city = item['市町村名(支部)']?.toLowerCase() || '';
+    const query = document.getElementById('searchInput').value.trim().toLowerCase();
+
+    const matchTown = checkTown && town.includes(query);
+    const matchCity = checkCity && city.includes(query);
+
+    return matchTown || matchCity;
+  });
+
+  sortResults();
+  renderResults();
+}
+
 
 document.getElementById('searchBtn').addEventListener('click', searchJinja);
 document.getElementById('searchInput').addEventListener('keypress', function (e) {
@@ -104,3 +145,18 @@ document.getElementById('searchInput').addEventListener('keypress', function (e)
     searchJinja();
   }
 });
+
+document.getElementById('sortBtn').addEventListener('click', () => {
+  if (filtered.length === 0) return;
+
+  sortAsc = !sortAsc;
+  sortResults();
+  renderResults();
+
+  const icon = sortAsc ? '🔼' : '🔽';
+  document.getElementById('sortBtn').textContent = `市町村名順 ${icon}`;
+});
+
+document.getElementById('filterCity').addEventListener('change', applyFilter);
+document.getElementById('filterTown').addEventListener('change', applyFilter);
+

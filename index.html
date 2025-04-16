@@ -7,8 +7,13 @@
 </head>
 <body>
   <h1>埼玉県の神社検索</h1>
-  <input type="text" id="searchInput" placeholder="町名で検索 (例: 相上)" />
+  <input type="text" id="searchInput" placeholder="町名 or 市名でで検索 (例: 相上)" />
   <button id="searchBtn">検索</button>
+  <button id="sortBtn">市町村名順 🔼</button>
+  <div style="margin-top: 10px;">
+    <label><input type="checkbox" id="filterCity" checked /> 市町村に含まれる</label>
+    <label><input type="checkbox" id="filterTown" checked style="margin-left:10px;" /> 町域に含まれる</label>
+  </div>
   <div id="results"></div>
   <script src="script.js"></script>
 </body>
